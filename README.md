@@ -1,2 +1,2 @@
-# Phenotype-Disease-Image-Database-demo-
-A demo for the Phenotype Disease Image Database
+# Phenotype Disease Image Database
+Webpage for Phenotype Disease Image Database
