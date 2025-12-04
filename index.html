@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Phenotype Disease Image Database | Research Repository</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+  <style>
+    :root {
+      --primary-color: #0f172a;   
+      --accent-color: #334155;     
+      --highlight-color: #2563eb;  
+      --bg-color: #f8f9fa;         
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --text-primary: #1e293b;
+      --text-secondary: #64748b;
+      
+      --font-heading: 'Merriweather', serif;
+      --font-body: 'Inter', sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg-color);
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* === Header Design === */
+    .header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border-color);
+      padding: 30px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-content { max-width: 1600px; margin: 0 auto; width: 100%; }
+    
+    .header h1 { 
+      font-family: var(--font-heading);
+      font-size: 1.8rem; 
+      font-weight: 700; 
+      color: var(--primary-color);
+      letter-spacing: -0.5px;
+    }
+    
+    .header-subtitle {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-top: 5px;
+      font-weight: 400;
+    }
+
+    .container {
+      max-width: 1600px;
+      margin: 40px auto;
+      padding: 0 40px;
+    }
+
+    /* === Filter Section === */
+    .filter-section {
+      background: var(--card-bg);
+      padding: 30px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      margin-bottom: 30px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 15px;
+    }
+
+    .section-title {
+      font-family: var(--font-heading);
+      font-size: 1.25rem;
+      color: var(--primary-color);
+      font-weight: 700;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+
+    .filter-group { display: flex; flex-direction: column; }
+    
+    .filter-group label { 
+      font-size: 0.75rem; 
+      font-weight: 600; 
+      color: var(--text-secondary); 
+      margin-bottom: 8px; 
+      text-transform: uppercase; 
+      letter-spacing: 0.5px;
+    }
+
+    .filter-group select, .filter-group input {
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      font-size: 0.9rem;
+      font-family: var(--font-body);
+      background: #fff;
+      color: var(--text-primary);
+      transition: all 0.2s ease;
+    }
+
+    .filter-group select:focus, .filter-group input:focus {
+      outline: none;
+      border-color: var(--highlight-color);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    /* === Buttons === */
+    .button-group {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    button {
+      padding: 10px 24px;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      font-family: var(--font-body);
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.3px;
+    }
+
+    .btn-primary { 
+      background: var(--primary-color); 
+      color: white; 
+    }
+    .btn-primary:hover { 
+      background: #1e293b; 
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary { 
+      background: white; 
+      color: var(--text-secondary); 
+      border-color: var(--border-color);
+    }
+    .btn-secondary:hover { 
+      background: #f1f5f9; 
+      color: var(--text-primary); 
+    }
+
+    /* === Stats & Action Bar (Sticky) === */
+    .action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 15px 20px;
+      background: #fff;
+      border: 1px solid var(--highlight-color);
+      border-radius: 6px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      position: sticky;
+      top: 10px;
+      z-index: 100;
+    }
+
+    .stats-text { font-size: 0.9rem; color: var(--text-secondary); }
+    .stats-text .number { font-weight: 600; color: var(--primary-color); }
+    
+    .selection-controls { display: flex; gap: 15px; align-items: center; }
+
+    .btn-download-zip { 
+      background: var(--highlight-color);
+      color: white;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-download-zip:hover { background: #1d4ed8; }
+    .btn-download-zip:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    /* === Gallery & Selection === */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 25px;
+    }
+
+    .image-card {
+      background: var(--card-bg);
+      border: 2px solid var(--border-color); /* Thicker border for selection state */
+      border-radius: 6px;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .image-card:hover {
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+      border-color: #cbd5e1;
+    }
+
+    /* Selected State */
+    .image-card.selected {
+      border-color: var(--highlight-color);
+      background-color: #eff6ff;
+    }
+    
+    .image-card.selected::after {
+      content: "✓";
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--highlight-color);
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: bold;
+      z-index: 10;
+    }
+
+    /* Checkbox Overlay Area */
+    .card-click-area {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 5;
+    }
+
+    .image-info { 
+      padding: 16px; 
+      border-top: 1px solid var(--border-color);
+      background: white;
+      position: relative; 
+      z-index: 6; /* Make info clickable for modal */
+    }
+    
+    .image-id { 
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.8rem; 
+      color: var(--text-secondary); 
+      margin-bottom: 10px; 
+      display: block;
+    }
+
+    .metadata-table { width: 100%; font-size: 0.8rem; border-collapse: collapse; }
+    .metadata-table td { padding: 3px 0; vertical-align: top; }
+    .metadata-table .label { 
+      color: var(--text-secondary); 
+      width: 40%; 
+      font-weight: 500;
+    }
+    .metadata-table .value {
+      color: var(--text-primary);
+      font-weight: 600;
+      text-align: right;
+    }
+
+    .no-results { 
+      text-align: center; 
+      padding: 60px 20px; 
+      grid-column: 1 / -1; 
+      background: white;
+      border: 1px dashed var(--border-color);
+      border-radius: 6px;
+    }
+
+    /* === Modal === */
+    .modal {
+      display: none; position: fixed; z-index: 2000;
+      left: 0; top: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(2px);
+      align-items: center; justify-content: center;
+    }
+
+    .modal-content {
+      background: white; width: 900px; max-width: 95vw; max-height: 90vh;
+      overflow-y: auto; border-radius: 8px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      display: flex; flex-direction: column;
+    }
+
+    .modal-header { 
+      padding: 20px 30px; 
+      border-bottom: 1px solid var(--border-color);
+      display: flex; justify-content: space-between; align-items: center;
+      background: #fcfcfc;
+    }
+    .modal-header h2 { font-family: var(--font-heading); font-size: 1.4rem; color: var(--primary-color); }
+
+    .modal-body { padding: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+    
+    .detail-table { width: 100%; border-collapse: collapse; }
+    .detail-table tr { border-bottom: 1px solid var(--border-color); }
+    .detail-table td { padding: 12px 0; font-size: 0.9rem; }
+    .detail-table .detail-label { font-weight: 600; color: var(--text-secondary); width: 40%; }
+    .detail-table .detail-value { color: var(--text-primary); }
+
+    .close-modal {
+      font-size: 28px; color: var(--text-secondary); cursor: pointer; transition: color 0.2s;
+    }
+
+    /* === Footer === */
+    .footer {
+      border-top: 1px solid var(--border-color);
+      background: white; color: var(--text-secondary);
+      text-align: center; padding: 40px 20px; margin-top: 60px;
+      font-size: 0.85rem;
+    }
+
+    /* Loader */
+    .spinner {
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top: 3px solid #fff;
+      width: 16px; height: 16px;
+      animation: spin 1s linear infinite;
+      display: none;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-content">
+      <h1>Phenotype Disease Image Database</h1>
+      <div class="header-subtitle">A Repository of Synthetic Phenotypic Representations for Clinical Research</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="filter-section">
+      <div class="section-header">
+        <h2 class="section-title">Database Query</h2>
+      </div>
+      
+      <div class="filters">
+        <div class="filter-group">
+          <label for="disease">Disease Type</label>
+          <select id="disease">
+            <option value="">All Pathologies</option>
+            <option value="cornelia de lange syndrome">Cornelia de Lange Syndrome</option>
+            <option value="turner syndrome">Turner Syndrome</option>
+            <option value="williams syndrome">Williams Syndrome</option>
+            <option value="noonan syndrome">Noonan Syndrome</option>
+            <option value="kabuki syndrome">Kabuki Syndrome</option>
+            <option value="kbg syndrome">KBG Syndrome</option>
+            <option value="angelman syndrome">Angelman Syndrome</option>
+            <option value="smith-magenis syndrome">Smith-Magenis Syndrome</option>
+            <option value="rubinstein-taybi syndrome">Rubinstein-Taybi Syndrome</option>
+            <option value="nicolaides-baraitser syndrome">Nicolaides-Baraitser Syndrome</option>
+            <option value="22q11.2 deletion syndrome">22q11.2 Deletion Syndrome</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="age">Age Group (Years)</label>
+          <select id="age">
+            <option value="">All Ages</option>
+            <option value="0-2">Infant (0-2)</option>
+            <option value="3-6">Early Childhood (3-6)</option>
+            <option value="7-9">Middle Childhood (7-9)</option>
+            <option value="10-14">Early Adolescence (10-14)</option>
+            <option value="15-19">Late Adolescence (15-19)</option>
+            <option value="20+">Adult (20+)</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="gender">Biological Sex</label>
+          <select id="gender">
+            <option value="">All</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="ancestry">Ancestry</label>
+          <select id="ancestry">
+            <option value="">All Ancestries</option>
+            <option value="european">European</option>
+            <option value="african">African</option>
+            <option value="asian">Asian</option>
+            <option value="latino">Latino</option>
+            <option value="multi_ancestry">Multi-ancestry / Admixture</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label for="search">Subject ID Search</label>
+          <input type="text" id="search" placeholder="e.g., SYN_CdLS_001">
+        </div>
+      </div>
+
+      <div class="button-group">
+        <button class="btn-secondary" onclick="resetFilters()">Clear Filters</button>
+        <button class="btn-primary" onclick="applyFilters()">Apply Parameters</button>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <div class="stats-text">
+        Showing <span class="number" id="result-count">0</span> records. 
+        Selected: <span class="number" id="selection-count">0</span>
+      </div>
+      
+      <div class="selection-controls">
+        <button class="btn-secondary" onclick="selectAllVisible()">Select All Filtered</button>
+        <button class="btn-secondary" onclick="clearSelection()">Deselect All</button>
+        <button class="btn-download-zip" id="dl-btn" onclick="downloadSelectedItems()" disabled>
+          <div class="spinner" id="dl-spinner"></div>
+          <span id="dl-text">Download Selected (ZIP)</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="gallery" class="gallery"></div>
+  </div>
+
+  <div class="footer">
+    <p>&copy; 2025 Wang Genomics Laboratory, Children's Hospital of Philadelphia.</p>
+    <p>Data Source: Synthetic Phenotype Generation via StyleGAN3 Architecture.</p>
+  </div>
+
+  <div id="modal" class="modal" onclick="closeModal()">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h2 id="modal-title">Subject Details</h2>
+        <span class="close-modal" onclick="closeModal()">&times;</span>
+      </div>
+      <div class="modal-body" id="modal-details"></div>
+    </div>
+  </div>
+
+  <script>
+    // ===== Data Model =====
+    const imageDatabase = [
+      { id: "SYN_CdLS_001", disease: "cornelia de lange syndrome", diseaseName: "Cornelia de Lange Syndrome", age: "3-6", gender: "male", ancestry: "latino" },
+      { id: "SYN_CdLS_002", disease: "cornelia de lange syndrome", diseaseName: "Cornelia de Lange Syndrome", age: "7-9", gender: "male", ancestry: "european" },
+      { id: "SYN_CdLS_003", disease: "cornelia de lange syndrome", diseaseName: "Cornelia de Lange Syndrome", age: "3-6", gender: "male", ancestry: "latino" },
+      { id: "SYN_CdLS_004", disease: "cornelia de lange syndrome", diseaseName: "Cornelia de Lange Syndrome", age: "3-6", gender: "female", ancestry: "latino" },
+      { id: "SYN_CdLS_005", disease: "cornelia de lange syndrome", diseaseName: "Cornelia de Lange Syndrome", age: "7-9", gender: "female", ancestry: "european" },
+      { id: "SYN_WBS_001", disease: "williams syndrome", diseaseName: "Williams Syndrome", age: "0-2", gender: "female", ancestry: "african" },
+      { id: "SYN_WBS_002", disease: "williams syndrome", diseaseName: "Williams Syndrome", age: "3-6", gender: "male", ancestry: "asian" },
+      { id: "SYN_WBS_003", disease: "williams syndrome", diseaseName: "Williams Syndrome", age: "3-6", gender: "female", ancestry: "european" },
+      { id: "SYN_WBS_004", disease: "williams syndrome", diseaseName: "Williams Syndrome", age: "0-2", gender: "male", ancestry: "european" },
+      { id: "SYN_WBS_005", disease: "williams syndrome", diseaseName: "Williams Syndrome", age: "3-6", gender: "female", ancestry: "multi_ancestry" },
+      { id: "SYN_NS_001", disease: "noonan syndrome", diseaseName: "Noonan Syndrome", age: "0-2", gender: "female", ancestry: "asian" },
+      { id: "SYN_NS_002", disease: "noonan syndrome", diseaseName: "Noonan Syndrome", age: "3-6", gender: "male", ancestry: "latino" },
+      { id: "SYN_NS_003", disease: "noonan syndrome", diseaseName: "Noonan Syndrome", age: "0-2", gender: "male", ancestry: "european" },
+      { id: "SYN_NS_004", disease: "noonan syndrome", diseaseName: "Noonan Syndrome", age: "7-9", gender: "male", ancestry: "european" },
+      { id: "SYN_NS_005", disease: "noonan syndrome", diseaseName: "Noonan Syndrome", age: "3-6", gender: "female", ancestry: "multi_ancestry" },
+      { id: "SYN_KS_001", disease: "kabuki syndrome", diseaseName: "Kabuki Syndrome", age: "7-9", gender: "male", ancestry: "latino" },
+      { id: "SYN_KS_002", disease: "kabuki syndrome", diseaseName: "Kabuki Syndrome", age: "3-6", gender: "female", ancestry: "asian" },
+      { id: "SYN_KS_003", disease: "kabuki syndrome", diseaseName: "Kabuki Syndrome", age: "10-14", gender: "female", ancestry: "multi_ancestry" },
+      { id: "SYN_KS_004", disease: "kabuki syndrome", diseaseName: "Kabuki Syndrome", age: "7-9", gender: "male", ancestry: "latino" },
+      { id: "SYN_KS_005", disease: "kabuki syndrome", diseaseName: "Kabuki Syndrome", age: "0-2", gender: "female", ancestry: "european" },
+      { id: "SYN_KBG_001", disease: "kbg syndrome", diseaseName: "KBG Syndrome", age: "3-6", gender: "male", ancestry: "european" },
+      { id: "SYN_KBG_002", disease: "kbg syndrome", diseaseName: "KBG Syndrome", age: "3-6", gender: "male", ancestry: "latino" },
+      { id: "SYN_KBG_003", disease: "kbg syndrome", diseaseName: "KBG Syndrome", age: "7-9", gender: "male", ancestry: "european" },
+      { id: "SYN_KBG_004", disease: "kbg syndrome", diseaseName: "KBG Syndrome", age: "3-6", gender: "female", ancestry: "european" },
+      { id: "SYN_KBG_005", disease: "kbg syndrome", diseaseName: "KBG Syndrome", age: "10-14", gender: "male", ancestry: "latino" },
+      { id: "SYN_AS_001", disease: "angelman syndrome", diseaseName: "Angelman Syndrome", age: "10-14", gender: "female", ancestry: "european" },
+      { id: "SYN_AS_002", disease: "angelman syndrome", diseaseName: "Angelman Syndrome", age: "3-6", gender: "male", ancestry: "european" },
+      { id: "SYN_AS_003", disease: "angelman syndrome", diseaseName: "Angelman Syndrome", age: "10-14", gender: "male", ancestry: "latino" },
+      { id: "SYN_AS_004", disease: "angelman syndrome", diseaseName: "Angelman Syndrome", age: "10-14", gender: "male", ancestry: "european" },
+      { id: "SYN_AS_005", disease: "angelman syndrome", diseaseName: "Angelman Syndrome", age: "3-6", gender: "female", ancestry: "european" },
+      { id: "SYN_RSTS_001", disease: "rubinstein-taybi syndrome", diseaseName: "Rubinstein-Taybi Syndrome", age: "0-2", gender: "female", ancestry: "latino" },
+      { id: "SYN_RSTS_002", disease: "rubinstein-taybi syndrome", diseaseName: "Rubinstein-Taybi Syndrome", age: "10-14", gender: "male", ancestry: "european" },
+      { id: "SYN_RSTS_003", disease: "rubinstein-taybi syndrome", diseaseName: "Rubinstein-Taybi Syndrome", age: "3-6", gender: "female", ancestry: "asian" },
+      { id: "SYN_RSTS_004", disease: "rubinstein-taybi syndrome", diseaseName: "Rubinstein-Taybi Syndrome", age: "15-19", gender: "female", ancestry: "european" },
+      { id: "SYN_RSTS_005", disease: "rubinstein-taybi syndrome", diseaseName: "Rubinstein-Taybi Syndrome", age: "7-9", gender: "male", ancestry: "latino" },
+      { id: "SYN_SMS_001", disease: "smith-magenis syndrome", diseaseName: "Smith-Magenis Syndrome", age: "15-19", gender: "female", ancestry: "european" },
+      { id: "SYN_SMS_002", disease: "smith-magenis syndrome", diseaseName: "Smith-Magenis Syndrome", age: "3-6", gender: "male", ancestry: "european" },
+      { id: "SYN_SMS_003", disease: "smith-magenis syndrome", diseaseName: "Smith-Magenis Syndrome", age: "7-9", gender: "male", ancestry: "european" },
+      { id: "SYN_SMS_004", disease: "smith-magenis syndrome", diseaseName: "Smith-Magenis Syndrome", age: "0-2", gender: "female", ancestry: "european" },
+      { id: "SYN_SMS_005", disease: "smith-magenis syndrome", diseaseName: "Smith-Magenis Syndrome", age: "7-9", gender: "male", ancestry: "european" },
+      { id: "SYN_NBS_001", disease: "nicolaides-baraitser syndrome", diseaseName: "Nicolaides-Baraitser Syndrome", age: "15-19", gender: "male", ancestry: "latino" },
+      { id: "SYN_NBS_002", disease: "nicolaides-baraitser syndrome", diseaseName: "Nicolaides-Baraitser Syndrome", age: "3-6", gender: "male", ancestry: "european" },
+      { id: "SYN_NBS_003", disease: "nicolaides-baraitser syndrome", diseaseName: "Nicolaides-Baraitser Syndrome", age: "3-6", gender: "male", ancestry: "european" },
+      { id: "SYN_NBS_004", disease: "nicolaides-baraitser syndrome", diseaseName: "Nicolaides-Baraitser Syndrome", age: "7-9", gender: "male", ancestry: "latino" },
+      { id: "SYN_NBS_005", disease: "nicolaides-baraitser syndrome", diseaseName: "Nicolaides-Baraitser Syndrome", age: "7-9", gender: "male", ancestry: "european" },
+      { id: "SYN_22Q_001", disease: "22q11.2 deletion syndrome", diseaseName: "22q11.2 Deletion Syndrome", age: "15-19", gender: "male", ancestry: "latino" },
+      { id: "SYN_22Q_002", disease: "22q11.2 deletion syndrome", diseaseName: "22q11.2 Deletion Syndrome", age: "3-6", gender: "male", ancestry: "european" },
+      { id: "SYN_22Q_003", disease: "22q11.2 deletion syndrome", diseaseName: "22q11.2 Deletion Syndrome", age: "3-6", gender: "male", ancestry: "asian" },
+      { id: "SYN_22Q_004", disease: "22q11.2 deletion syndrome", diseaseName: "22q11.2 Deletion Syndrome", age: "3-6", gender: "male", ancestry: "asian" },
+      { id: "SYN_22Q_005", disease: "22q11.2 deletion syndrome", diseaseName: "22q11.2 Deletion Syndrome", age: "3-6", gender: "male", ancestry: "european" }
+    ];
+
+    // Global State
+    let currentFilters = { disease:"", age:"", gender:"", ancestry:"", search:"" };
+    let selectedIds = new Set(); // Stores IDs of selected images
+    let currentlyVisibleImages = []; // Stores the array of currently filtered images
+
+    // Initialization
+    function init() {
+      applyFilters(); // Loads initial data
+    }
+
+    function formatLabel(str) {
+      if (!str) return "—";
+      if (str === "multi_ancestry") return "Multi-ancestry";
+      return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // ===== Selection Logic =====
+
+    // Toggle single selection
+    function toggleSelection(id) {
+      if (selectedIds.has(id)) {
+        selectedIds.delete(id);
+      } else {
+        selectedIds.add(id);
+      }
+      renderSelectionState();
+    }
+
+    // Select all visible (filtered) images
+    function selectAllVisible() {
+      currentlyVisibleImages.forEach(img => selectedIds.add(img.id));
+      renderSelectionState();
+    }
+
+    // Clear all selections
+    function clearSelection() {
+      selectedIds.clear();
+      renderSelectionState();
+    }
+
+    // Update UI based on selection state
+    function renderSelectionState() {
+      // Update counters
+      document.getElementById("selection-count").textContent = selectedIds.size;
+      
+      // Update Button State
+      const dlBtn = document.getElementById("dl-btn");
+      dlBtn.disabled = selectedIds.size === 0;
+
+      // Update Visuals (Classes)
+      const cards = document.querySelectorAll('.image-card');
+      cards.forEach(card => {
+        // ID is stored in data attribute for easy access
+        const id = card.getAttribute('data-id');
+        if (selectedIds.has(id)) {
+          card.classList.add('selected');
+        } else {
+          card.classList.remove('selected');
+        }
+      });
+    }
+
+    // ===== Rendering =====
+    function displayImages(images) {
+      currentlyVisibleImages = images; // Update global state for "select all" logic
+      const gallery = document.getElementById("gallery");
+      
+      if (images.length === 0) {
+        gallery.innerHTML = `
+          <div class="no-results">
+            <div class="no-results-title">No Matching Records</div>
+            <p style="color: #64748b;">There are no subjects matching your current query parameters.</p>
+          </div>`;
+        return;
+      }
+
+      gallery.innerHTML = images.map(img => `
+        <div class="image-card ${selectedIds.has(img.id) ? 'selected' : ''}" data-id="${img.id}">
+          <div class="card-click-area" onclick="toggleSelection('${img.id}')"></div>
+          
+          <img src="images/${img.id}.png" alt="${img.id}"
+            style="width: 100%; height: 260px; object-fit: cover; border-bottom: 1px solid #e2e8f0; background: #f1f5f9;"
+            onerror="this.onerror=null; this.src='images/placeholder.png';" />
+          
+          <div class="image-info">
+            <button class="btn-secondary" style="float:right; padding: 4px 8px; font-size: 0.7rem;" onclick="event.stopPropagation(); showModal('${img.id}')">Details</button>
+            <span class="image-id">${img.id}</span>
+            <table class="metadata-table">
+              <tr><td class="label">Disease</td><td class="value">${img.diseaseName}</td></tr>
+              <tr><td class="label">Age</td><td class="value">${img.age} y</td></tr>
+              <tr><td class="label">Sex</td><td class="value">${formatLabel(img.gender)}</td></tr>
+            </table>
+          </div>
+        </div>`).join("");
+      
+      updateStats(images.length, imageDatabase.length);
+      renderSelectionState(); // Ensure styling is correct after re-render
+    }
+
+    function applyFilters() {
+      currentFilters = {
+        disease: document.getElementById("disease").value,
+        age: document.getElementById("age").value,
+        gender: document.getElementById("gender").value,
+        ancestry: document.getElementById("ancestry").value,
+        search: document.getElementById("search").value.toLowerCase()
+      };
+      
+      const filtered = imageDatabase.filter(img => {
+        if (currentFilters.disease && img.disease !== currentFilters.disease) return false;
+        if (currentFilters.age && img.age !== currentFilters.age) return false;
+        if (currentFilters.gender && img.gender !== currentFilters.gender) return false;
+        if (currentFilters.ancestry && img.ancestry !== currentFilters.ancestry) return false;
+        if (currentFilters.search && !img.id.toLowerCase().includes(currentFilters.search)) return false;
+        return true;
+      });
+      
+      displayImages(filtered);
+    }
+
+    function resetFilters() {
+      ["disease","age","gender","ancestry","search"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+      applyFilters();
+    }
+
+    function updateStats(shown, total) {
+      document.getElementById("result-count").textContent = shown;
+    }
+
+    // ===== Modal Logic =====
+    function showModal(imageId) {
+      const img = imageDatabase.find(i => i.id === imageId);
+      if (!img) return;
+      const modal = document.getElementById("modal");
+      const title = document.getElementById("modal-title");
+      const details = document.getElementById("modal-details");
+      
+      title.textContent = `${img.id} | Clinical Detail`;
+      
+      details.innerHTML = `
+        <div class="modal-img-container">
+          <img src="images/${img.id}.png" alt="${img.id}"
+            style="width: 100%; border-radius: 4px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid #e2e8f0;"
+            onerror="this.onerror=null; this.src='images/placeholder.png';" />
+        </div>
+        <div class="modal-data-container">
+           <h3 style="font-family: var(--font-heading); color: var(--primary-color); margin-bottom: 20px;">Phenotypic Metadata</h3>
+           <table class="detail-table">
+            <tr><td class="detail-label">Subject ID</td><td class="detail-value" style="font-family:'Roboto Mono'">${img.id}</td></tr>
+            <tr><td class="detail-label">Pathology</td><td class="detail-value">${img.diseaseName}</td></tr>
+            <tr><td class="detail-label">Age Group</td><td class="detail-value">${img.age} years</td></tr>
+            <tr><td class="detail-label">Biological Sex</td><td class="detail-value">${formatLabel(img.gender)}</td></tr>
+            <tr><td class="detail-label">Ancestry</td><td class="detail-value">${formatLabel(img.ancestry)}</td></tr>
+            <tr><td class="detail-label">Generation Model</td><td class="detail-value">NVIDIA StyleGAN3</td></tr>
+            <tr><td class="detail-label">Resolution</td><td class="detail-value">224 x 224 px</td></tr>
+          </table>
+        </div>
+      `;
+      modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById("modal").style.display = 'none';
+    }
+
+    // ===== CORE FUNCTION: ZIP DOWNLOAD =====
+    async function downloadSelectedItems() {
+      if (selectedIds.size === 0) {
+        alert("Please select at least one subject.");
+        return;
+      }
+
+      // UI Loading State
+      const btn = document.getElementById("dl-btn");
+      const spinner = document.getElementById("dl-spinner");
+      const text = document.getElementById("dl-text");
+      
+      btn.disabled = true;
+      spinner.style.display = "block";
+      text.textContent = "Compressing Data...";
+
+      try {
+        const zip = new JSZip();
+        
+        // 1. Get Selected Data
+        const selectedData = imageDatabase.filter(img => selectedIds.has(img.id));
+
+        // 2. Generate CSV Content
+        const csvContent = [
+          ['Image_ID','Disease_Type','Age_Range','Biological_Sex','Ancestry','Generation_Method'],
+          ...selectedData.map(img => [
+            img.id, img.diseaseName, img.age, img.gender, img.ancestry, 'StyleGAN3'
+          ])
+        ].map(row => row.join(',')).join('\n');
+
+        // Add CSV to zip
+        zip.file("phenotype_metadata.csv", csvContent);
+        
+        const imgFolder = zip.folder("images");
+
+        // 3. Fetch Images and Add to Zip
+        // Note: In a real environment, this fetches from the server. 
+        // If image is missing (404), we handle it gracefully.
+        
+        const imagePromises = selectedData.map(async (img) => {
+          const filename = `${img.id}.png`;
+          const url = `images/${filename}`; 
+          
+          try {
+            // Attempt to fetch the actual image
+            const response = await fetch(url);
+            if (response.ok) {
+              const blob = await response.blob();
+              imgFolder.file(filename, blob);
+            } else {
+              // If image not found (Demo Mode), create a placeholder image dynamically
+              throw new Error("Image not found");
+            }
+          } catch (e) {
+            // FALLBACK FOR DEMO: Generate a dummy image so ZIP isn't empty
+            // In production, you might log an error or skip the file
+            console.warn(`Missing image ${filename}, generating placeholder.`);
+            const canvas = document.createElement("canvas");
+            canvas.width = 400; canvas.height = 400;
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#e2e8f0"; ctx.fillRect(0,0,400,400);
+            ctx.fillStyle = "#334155"; ctx.font = "20px sans-serif";
+            ctx.fillText(img.id, 50, 200);
+            
+            const dataUrl = canvas.toDataURL("image/png");
+            // Remove header to get base64
+            const base64 = dataUrl.split(',')[1]; 
+            imgFolder.file(filename, base64, {base64: true});
+          }
+        });
+
+        await Promise.all(imagePromises);
+
+        // 4. Generate Zip File
+        const content = await zip.generateAsync({type:"blob"});
+        
+        // 5. Trigger Download
+        saveAs(content, "phenotype_research_data.zip");
+
+      } catch (err) {
+        console.error("Zip generation failed:", err);
+        alert("An error occurred while preparing the download.");
+      } finally {
+        // Reset UI
+        btn.disabled = false;
+        spinner.style.display = "none";
+        text.textContent = "Download Selected (ZIP)";
+      }
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
